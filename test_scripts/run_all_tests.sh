@@ -46,6 +46,7 @@ for test in "${TEST_CASES[@]}"; do
     log "❌ Test failed: $test"
     ((FAILED++))
     FAILED_TESTS+=("$test")
+    # Continue to next test instead of failing immediately
   fi
   
   echo "-----------------------------------"

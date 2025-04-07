@@ -21,7 +21,18 @@ if [[ ! -d "output" ]]; then
   exit 1
 fi
 
-# Basic checks on the output structure can be added here
-# For example, checking if files were organized into date-based subdirectories
+# Get the current year and date info (these files will be created with current timestamp)
+CURRENT_YEAR=$(date +"%Y")
+CURRENT_MONTH=$(date +"%m")
+
+# Convert current month to zero-padded format if needed
+CURRENT_MONTH_PADDED=$(printf "%02d" "$CURRENT_MONTH")
+
+# Check for at least one file in the output directory
+if ! ls "output/$CURRENT_YEAR/$CURRENT_MONTH_PADDED/"* &> /dev/null; then
+  echo "FAIL: No files found in date directory output/$CURRENT_YEAR/$CURRENT_MONTH_PADDED/"
+  echo "Files were not organized by date correctly"
+  exit 1
+fi
 
 echo "SUCCESS: Files were organized by date"
