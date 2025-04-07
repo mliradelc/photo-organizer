@@ -42,15 +42,26 @@ for test in "${TEST_SCRIPTS[@]}"; do
   
   # Run the test
   cd "$TEST_TMP_DIR"
+  # Create a temporary file to capture output
+  TEST_OUTPUT_FILE="$(mktemp)"
+  
   # shellcheck disable=SC1090
-  if source "$SCRIPT_DIR/individual_tests/$test.sh"; then
+  if source "$SCRIPT_DIR/individual_tests/$test.sh" > "$TEST_OUTPUT_FILE" 2>&1; then
     log "✅ Test passed: $test"
     ((PASSED++))
   else
-    log "❌ Test failed: $test"
+    TEST_EXIT_CODE=$?
+    log "❌ Test failed: $test (exit code: $TEST_EXIT_CODE)"
+    log "Test output:"
+    cat "$TEST_OUTPUT_FILE"
     ((FAILED++))
     FAILED_TESTS+=("$test")
   fi
+  
+  # Clean up the temporary file
+  rm -f "$TEST_OUTPUT_FILE"
+  
+  # Don't exit the loop, continue to the next test
   
   # Go back to original directory and cleanup
   cd "$SCRIPT_DIR"

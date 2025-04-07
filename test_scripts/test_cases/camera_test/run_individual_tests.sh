@@ -73,6 +73,8 @@ for test in "${TEST_SCRIPTS[@]}"; do
   # Clean up the temporary file
   rm -f "$TEST_OUTPUT_FILE"
   
+  # Don't exit the loop, continue to the next test
+  
   # Go back to original directory 
   cd "$SCRIPT_DIR"
   
