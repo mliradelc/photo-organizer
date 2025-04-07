@@ -27,50 +27,50 @@ fi
 
 # Verify that images were organized in combined structure (camera/year/month)
 # Canon images
-if [[ ! -f "output/Canon/EOS 5D Mark IV/2018/05/canon_2018.jpg" ]]; then
+if [[ ! -f "output/Canon_EOS_5D_Mark_IV/2018/05/canon_2018.jpg" ]]; then
   echo "FAIL: Canon image (canon_2018.jpg) was not organized correctly"
   exit 1
 fi
 
-if [[ ! -f "output/Canon/EOS 6D/2021/03/create_date_only.jpg" ]]; then
+if [[ ! -f "output/Canon_EOS_6D/2021/03/create_date_only.jpg" ]]; then
   echo "FAIL: Canon image (create_date_only.jpg) was not organized correctly"
   exit 1
 fi
 
 # Nikon images
-if [[ ! -f "output/Nikon/D850/2019/07/nikon_2019.jpg" ]]; then
+if [[ ! -f "output/Nikon_D850/2019/07/nikon_2019.jpg" ]]; then
   echo "FAIL: Nikon image (nikon_2019.jpg) was not organized correctly"
   exit 1
 fi
 
-if [[ ! -f "output/Nikon/D750/2021/04/modify_date_only.jpg" ]]; then
+if [[ ! -f "output/Nikon_D750/2021/04/modify_date_only.jpg" ]]; then
   echo "FAIL: Nikon image (modify_date_only.jpg) was not organized correctly"
   exit 1
 fi
 
 # Sony images
-if [[ ! -f "output/Sony/Alpha A7 III/2020/12/sony_2020.jpg" ]]; then
+if [[ ! -f "output/Sony_Alpha_A7_III/2020/12/sony_2020.jpg" ]]; then
   echo "FAIL: Sony image (sony_2020.jpg) was not organized correctly"
   exit 1
 fi
 
-if [[ ! -f "output/Sony/Alpha A7R IV/2021/05/camera_only.jpg" ]]; then
+if [[ ! -f "output/Sony_Alpha_A7R_IV/2021/05/camera_only.jpg" ]]; then
   echo "FAIL: Sony image (camera_only.jpg) was not organized correctly"
   exit 1
 fi
 
 # Verify that images with no camera data were organized into Unknown folder
-if [[ ! -f "output/Unknown/2019/01/old_jpeg.jpg" ]]; then
+if [[ ! -f "output/Unknown_Camera/2019/01/old_jpeg.jpg" ]]; then
   echo "FAIL: No EXIF image (old_jpeg.jpg) was not organized correctly"
   exit 1
 fi
 
-if [[ ! -f "output/Unknown/2022/12/recent_jpeg.jpg" ]]; then
+if [[ ! -f "output/Unknown_Camera/2022/12/recent_jpeg.jpg" ]]; then
   echo "FAIL: No EXIF image (recent_jpeg.jpg) was not organized correctly"
   exit 1
 fi
 
-if [[ ! -f "output/Unknown/2020/06/image.png" ]]; then
+if [[ ! -f "output/Unknown_Camera/2020/06/image.png" ]]; then
   echo "FAIL: PNG image (image.png) was not organized correctly"
   exit 1
 fi
