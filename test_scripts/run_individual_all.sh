@@ -5,7 +5,7 @@
 
 # Find the repository root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR" || exit 1
 
 # Function to log messages
 log() {
@@ -46,7 +46,7 @@ FAILED_TESTS=()
 # Run each test individually
 for test_path in "${TEST_CATEGORIES[@]}"; do
   test_name=$(basename "$test_path" .sh)
-  test_group=$(dirname $(dirname "$test_path"))
+  test_group=$(dirname "$(dirname "$test_path")")
   
   log "Running test: $test_name (group: $test_group)"
   
@@ -67,7 +67,7 @@ for test_path in "${TEST_CATEGORIES[@]}"; do
   fi
   
   # Run the test
-  cd "$TEST_TMP_DIR"
+  cd "$TEST_TMP_DIR" || exit 1
   
   log "Executing: $SCRIPT_DIR/test_cases/$test_path"
   
@@ -84,7 +84,7 @@ for test_path in "${TEST_CATEGORIES[@]}"; do
   fi
   
   # Go back to script directory and clean up
-  cd "$SCRIPT_DIR"
+  cd "$SCRIPT_DIR" || exit 1
   rm -rf "$TEST_TMP_DIR"
   
   echo "-----------------------------------"
