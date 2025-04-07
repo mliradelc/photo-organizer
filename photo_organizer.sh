@@ -9,14 +9,15 @@ set -e
 readonly SCRIPT_NAME="Photo Organizer"
 readonly SCRIPT_VERSION="1.0.0"
 
-# Terminal colors and cursor movement
-readonly TERM_CLEAR_LINE="\r\033[K"
-readonly TERM_GREEN="\033[32m"
-readonly TERM_BLUE="\033[34m"
-readonly TERM_YELLOW="\033[33m"
-readonly TERM_RESET="\033[0m"
+# Terminal colors and cursor movement - use escape chars directly
+ESC=$(printf '\033')
+readonly TERM_CLEAR_LINE="${ESC}[1G${ESC}[K"
+readonly TERM_GREEN="${ESC}[32m"
+readonly TERM_BLUE="${ESC}[34m"
+readonly TERM_YELLOW="${ESC}[33m"
+readonly TERM_RESET="${ESC}[0m"
 
-# Function to draw a progress bar
+# Function to draw a progress bar using simple ASCII characters
 draw_progress_bar() {
   local percent=$1
   local width=${2:-50}
@@ -27,11 +28,11 @@ draw_progress_bar() {
   local percent_display
   percent_display="$(printf "%3d" "$percent")%"
   
-  # Draw progress bar
+  # Draw progress bar with simple ASCII instead of Unicode
   printf "%s" "${TERM_CLEAR_LINE}${TERM_BLUE}[${TERM_GREEN}"
-  printf "%${completed}s" | tr ' ' '█'
+  printf "%${completed}s" | tr ' ' '#'
   printf "%s" "${TERM_BLUE}"
-  printf "%${remaining}s" | tr ' ' '░'
+  printf "%${remaining}s" | tr ' ' '-'
   printf "%s" "] ${TERM_YELLOW}"
   printf " %s%s" "$percent_display" "${TERM_RESET}"
 }
