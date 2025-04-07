@@ -3,7 +3,7 @@
 # Run individual test cases for EXIF tests
 #
 
-set -e
+# Removed set -e to allow all tests to run even if some fail
 
 # Find the script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
