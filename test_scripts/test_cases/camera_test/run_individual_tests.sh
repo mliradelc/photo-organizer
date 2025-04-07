@@ -29,36 +29,17 @@ PASSED=0
 FAILED=0
 FAILED_TESTS=()
 
-# Check if a test directory has been provided by the parent script
-if [[ -z "$TEST_TMP_DIR" ]]; then
-  # Create a clean test environment if not provided
-  TEST_TMP_DIR="$(mktemp -d)"
-  trap 'rm -rf "$TEST_TMP_DIR"' EXIT
-  
-  # Copy test data to temporary directory
-  cp -r "$SCRIPT_DIR/input" "$TEST_TMP_DIR/"
-fi
+# No need to create temporary directories anymore since the individual tests handle their own input/output
 
 # Run each test case
 for test in "${TEST_SCRIPTS[@]}"; do
   log "Running test: $test"
   
-  # Make a separate subdirectory for each test to avoid file conflicts
-  TEST_SUBDIR="$TEST_TMP_DIR/$test"
-  mkdir -p "$TEST_SUBDIR"
-  
-  # Copy test data to the test-specific subdirectory
-  cp -r "$TEST_TMP_DIR/input" "$TEST_SUBDIR/"
-  
-  # Run the test
-  cd "$TEST_SUBDIR"
-  log "Running test script: $SCRIPT_DIR/individual_tests/$test.sh"
-  
   # Create a temporary file to capture output
   TEST_OUTPUT_FILE="$(mktemp)"
   
-  # shellcheck disable=SC1090
-  if source "$SCRIPT_DIR/individual_tests/$test.sh" > "$TEST_OUTPUT_FILE" 2>&1; then
+  # Run the test directly (the test scripts now handle finding their own input)
+  if bash "$SCRIPT_DIR/individual_tests/$test.sh" > "$TEST_OUTPUT_FILE" 2>&1; then
     log "✅ Test passed: $test"
     ((PASSED++))
   else
@@ -73,13 +54,6 @@ for test in "${TEST_SCRIPTS[@]}"; do
   # Clean up the temporary file
   rm -f "$TEST_OUTPUT_FILE"
   
-  # Don't exit the loop, continue to the next test
-  
-  # Go back to original directory 
-  cd "$SCRIPT_DIR"
-  
-  # We'll clean up the entire test directory at the end, not after each test
-  
   echo "-----------------------------------"
 done
 
@@ -89,12 +63,7 @@ log "  Total: ${#TEST_SCRIPTS[@]}"
 log "  Passed: $PASSED"
 log "  Failed: $FAILED"
 
-# Only clean up if we created the test directory ourselves
-if [[ -z "$TEST_TMP_DIR_EXPORTED" ]]; then
-  log "Cleaning up test directory: $TEST_TMP_DIR"
-  rm -rf "$TEST_TMP_DIR"
-  trap - EXIT
-fi
+# No need to clean up temporary directories anymore
 
 if [[ $FAILED -gt 0 ]]; then
   log "Failed tests:"

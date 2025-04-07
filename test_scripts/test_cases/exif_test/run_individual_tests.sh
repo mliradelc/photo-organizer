@@ -33,20 +33,11 @@ FAILED_TESTS=()
 for test in "${TEST_SCRIPTS[@]}"; do
   log "Running test: $test"
   
-  # Create a clean test environment
-  TEST_TMP_DIR="$(mktemp -d)"
-  trap 'rm -rf "$TEST_TMP_DIR"' EXIT
-  
-  # Copy test data to temporary directory
-  cp -r "$SCRIPT_DIR/input" "$TEST_TMP_DIR/"
-  
-  # Run the test
-  cd "$TEST_TMP_DIR"
   # Create a temporary file to capture output
   TEST_OUTPUT_FILE="$(mktemp)"
   
-  # shellcheck disable=SC1090
-  if source "$SCRIPT_DIR/individual_tests/$test.sh" > "$TEST_OUTPUT_FILE" 2>&1; then
+  # Run the test directly (the test scripts now handle finding their own input)
+  if bash "$SCRIPT_DIR/individual_tests/$test.sh" > "$TEST_OUTPUT_FILE" 2>&1; then
     log "✅ Test passed: $test"
     ((PASSED++))
   else
@@ -60,13 +51,6 @@ for test in "${TEST_SCRIPTS[@]}"; do
   
   # Clean up the temporary file
   rm -f "$TEST_OUTPUT_FILE"
-  
-  # Don't exit the loop, continue to the next test
-  
-  # Go back to original directory and cleanup
-  cd "$SCRIPT_DIR"
-  rm -rf "$TEST_TMP_DIR"
-  trap - EXIT
   
   echo "-----------------------------------"
 done
