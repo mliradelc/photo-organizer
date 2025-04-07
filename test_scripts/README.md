@@ -2,6 +2,21 @@
 
 This directory contains test scripts and test cases for the Photo Organizer tool.
 
+## Test Structure
+
+The test suite is organized into several test case groups, each testing a specific aspect of the photo organizer:
+
+- **date_organization**: Tests for organizing photos by date
+- **camera_test**: Tests for organizing photos by camera make/model
+- **combined_test**: Tests for organizing photos by both camera and date
+- **exif_test**: Tests for handling EXIF data in various scenarios
+
+Each test case group contains:
+- `input/`: Directory with test images
+- `test.sh`: The original monolithic test script
+- `individual_tests/`: Directory with individual test files for each specific test case
+- `run_individual_tests.sh`: Script to run all individual tests in the group
+
 ## Running Tests
 
 ### Setup Test Images
@@ -24,9 +39,22 @@ To run all test cases:
 ./run_all_tests.sh
 ```
 
+### Run a Single Test Group
+
+To run all tests in a specific test group:
+
+```bash
+./test_cases/[test_group]/run_individual_tests.sh
+```
+
+For example:
+```bash
+./test_cases/exif_test/run_individual_tests.sh
+```
+
 ### Run a Single Test
 
-To run a single test:
+To run a single test (original method):
 
 ```bash
 ./test_single.sh TEST_NAME
@@ -34,30 +62,62 @@ To run a single test:
 
 Where `TEST_NAME` is the name of a test case directory in `test_cases/`.
 
-## Test Case Structure
+To run a specific individual test:
 
-Each test case has the following structure:
-
-```
-test_cases/
-└── test_name/
-    ├── input/
-    │   └── (sample photos to organize)
-    └── test.sh
+```bash
+# Navigate to the test directory first
+cd test_cases/[test_group]/individual_tests
+bash [test_file].sh
 ```
 
-The `test.sh` script should:
-
-1. Run the photo organizer with appropriate parameters
-2. Verify the output is as expected
-3. Return exit code 0 for success, non-zero for failure
+For example:
+```bash
+cd test_cases/exif_test/individual_tests
+bash complete_exif_test.sh
+```
 
 ## Available Test Cases
 
-- `date_organization` - Tests basic date-based organization functionality
-- `exif_test` - Tests organization with various EXIF data scenarios (complete, partial, none)
-- `camera_test` - Tests organization by camera make and model
-- `combined_test` - Tests combined organization (camera/date structure)
+### Date Organization Tests
+- `date_directory_creation_test` - Tests creation of date-based directory structure
+- `date_file_organization_test` - Tests files are organized into correct date directories
+
+### EXIF Data Tests
+- `complete_exif_test` - Tests organization of images with complete EXIF data
+- `partial_exif_test` - Tests organization of images with partial EXIF data
+- `no_exif_test` - Tests organization of images with no EXIF data
+- `exif_enhancement_test` - Tests EXIF data enhancement functionality
+
+### Camera Tests
+- `canon_camera_test` - Tests organization of Canon camera images
+- `nikon_camera_test` - Tests organization of Nikon camera images
+- `sony_camera_test` - Tests organization of Sony camera images
+- `unknown_camera_test` - Tests organization of images with no camera data
+
+### Combined Organization Tests
+- `canon_combined_test` - Tests combined organization of Canon camera images
+- `nikon_combined_test` - Tests combined organization of Nikon camera images
+- `sony_combined_test` - Tests combined organization of Sony camera images
+- `unknown_combined_test` - Tests combined organization of images with no camera data
+
+## Adding New Tests
+
+To add a new test case:
+
+1. Create a new script in the appropriate `individual_tests/` directory
+2. Make sure your script:
+   - Creates a clean test environment
+   - Runs the photo organizer with appropriate options
+   - Verifies the expected output
+   - Returns a non-zero exit code on failure
+   - Outputs clear error messages
+
+3. Make the script executable:
+   ```bash
+   chmod +x your_new_test.sh
+   ```
+
+4. Run your test using the instructions above
 
 ## Test Images
 
