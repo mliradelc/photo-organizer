@@ -3,7 +3,7 @@
 # Run all test cases for Photo Organizer
 #
 
-set -e
+# Removed set -e to prevent premature exit and rely on explicit failure handling
 
 # Find the repository root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
