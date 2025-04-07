@@ -1,20 +1,25 @@
-name: ShellCheck
+name: Shellcheck
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ master ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   shellcheck:
     runs-on: ubuntu-latest
-
+    
     steps:
     - uses: actions/checkout@v3
     
-    - name: Install ShellCheck
+    - name: Install shellcheck
       run: sudo apt-get install -y shellcheck
     
-    - name: Run ShellCheck
-      run: shellcheck photo_organizer.sh
+    - name: Run shellcheck
+      run: |
+        shellcheck photo_organizer.sh
+        shellcheck test_scripts/*.sh
+        shellcheck test_scripts/test_cases/*/*.sh
+        shellcheck test_images/*.sh

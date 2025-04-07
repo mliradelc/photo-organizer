@@ -131,7 +131,28 @@ organized_photos/
 - Run script: `bash photo_organizer.sh`
 - Lint shell scripts: `shellcheck photo_organizer.sh`
 - Test EXIF extraction: `exiftool -a -u -g1 test_image.jpg`
+
+### Testing
+
+The project includes a comprehensive test suite to verify functionality with various EXIF data scenarios:
+
+- Create test images: `cd test_images && ./create_test_images.sh`
+- Setup test cases: `cd test_scripts && ./setup_test_images.sh`
+- Run all tests: `cd test_scripts && ./run_all_tests.sh`
 - Run single test: `bash test_scripts/test_single.sh TEST_NAME`
+
+Test scenarios include:
+- Complete EXIF data (with dates and camera information)
+- Partial EXIF data (missing DateTimeOriginal but having CreateDate)
+- No EXIF data (using file timestamps)
+- Various organization methods (by date, camera, or both)
+
+### Continuous Integration
+
+This project uses GitHub Actions for continuous integration:
+- Automatically runs all tests on push and pull requests
+- Performs shellcheck analysis on all shell scripts
+- Verifies the script works with different EXIF scenarios
 
 ## License
 

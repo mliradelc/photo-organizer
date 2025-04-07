@@ -1,0 +1,45 @@
+name: Test Photo Organizer
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y exiftool imagemagick
+    
+    - name: Check syntax with shellcheck
+      run: |
+        sudo apt-get install -y shellcheck
+        shellcheck photo_organizer.sh
+        shellcheck test_scripts/*.sh
+        shellcheck test_scripts/test_cases/*/*.sh
+    
+    - name: Create test images
+      run: |
+        cd test_images
+        chmod +x create_test_images.sh
+        ./create_test_images.sh
+    
+    - name: Setup test environment
+      run: |
+        cd test_scripts
+        chmod +x setup_test_images.sh
+        ./setup_test_images.sh
+    
+    - name: Run all tests
+      run: |
+        cd test_scripts
+        chmod +x run_all_tests.sh
+        ./run_all_tests.sh
