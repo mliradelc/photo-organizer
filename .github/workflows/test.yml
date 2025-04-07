@@ -53,4 +53,5 @@ jobs:
         chmod +x run_all_tests.sh
         chmod +x test_single.sh
         chmod +x test_cases/*/*.sh
+        chmod +x test_cases/*/*/*.sh
         ./run_all_tests.sh
