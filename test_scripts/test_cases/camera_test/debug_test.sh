@@ -4,7 +4,7 @@
 #
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR" || exit 1
 
 # Set up test environment
 TEST_TMP_DIR="$(mktemp -d)"
@@ -20,7 +20,7 @@ for test_file in individual_tests/*.sh; do
   echo "==== Running test: $test_name ===="
   
   # Change to test directory
-  cd "$TEST_TMP_DIR"
+  cd "$TEST_TMP_DIR" || exit 1
   
   # Run the test with detailed output
   bash -x "$SCRIPT_DIR/$test_file" 2>&1 || echo "Test $test_name failed with exit code $?"
@@ -29,7 +29,7 @@ for test_file in individual_tests/*.sh; do
   echo ""
   
   # Return to script directory
-  cd "$SCRIPT_DIR"
+  cd "$SCRIPT_DIR" || exit 1
 done
 
 # Clean up
