@@ -5,7 +5,8 @@
 
 set -e
 
-SCRIPT_DIR="$(dirname "$0")"
+# Find the repository root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Function to log messages
@@ -16,7 +17,7 @@ log() {
 # Setup test images if they don't exist
 if [[ ! -f "test_cases/exif_test/input/canon_2018.jpg" ]]; then
   log "Setting up test images..."
-  ./setup_test_images.sh
+  bash "$SCRIPT_DIR/setup_test_images.sh"
 fi
 
 # Get all test case directories

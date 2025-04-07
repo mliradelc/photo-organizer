@@ -26,17 +26,32 @@ jobs:
         shellcheck test_scripts/*.sh
         shellcheck test_scripts/test_cases/*/*.sh
     
-    - name: Create test images
+    - name: Create test images and set up test environment
       run: |
+        # Create necessary directories
+        mkdir -p test_images/{complete_exif,partial_exif,no_exif}
+        mkdir -p test_scripts/test_cases/{exif_test,camera_test,combined_test}/input
+        
+        # Make scripts executable
+        chmod +x test_images/create_test_images.sh
+        chmod +x test_scripts/setup_test_images.sh
+        
+        # Run the image creation script
         cd test_images
-        chmod +x create_test_images.sh
         ./create_test_images.sh
-    
-    - name: Setup test environment
-      run: |
-        cd test_scripts
-        chmod +x setup_test_images.sh
-        ./setup_test_images.sh
+        
+        # Copy test images directly to test directories
+        cp -r complete_exif/* ../test_scripts/test_cases/exif_test/input/
+        cp -r partial_exif/* ../test_scripts/test_cases/exif_test/input/
+        cp -r no_exif/* ../test_scripts/test_cases/exif_test/input/
+        
+        cp -r complete_exif/* ../test_scripts/test_cases/camera_test/input/
+        cp -r partial_exif/* ../test_scripts/test_cases/camera_test/input/
+        cp -r no_exif/* ../test_scripts/test_cases/camera_test/input/
+        
+        cp -r complete_exif/* ../test_scripts/test_cases/combined_test/input/
+        cp -r partial_exif/* ../test_scripts/test_cases/combined_test/input/
+        cp -r no_exif/* ../test_scripts/test_cases/combined_test/input/
     
     - name: Run all tests
       run: |
