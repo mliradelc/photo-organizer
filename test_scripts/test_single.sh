@@ -29,13 +29,14 @@ echo "==============================="
 
 # Create a clean test environment
 TEST_TMP_DIR="$(mktemp -d)"
-trap "rm -rf $TEST_TMP_DIR" EXIT
+trap 'rm -rf "$TEST_TMP_DIR"' EXIT
 
 # Copy test data to temporary directory
 cp -r "$TEST_DIR/input" "$TEST_TMP_DIR/"
 
 # Run the test
 cd "$TEST_TMP_DIR"
+# shellcheck disable=SC1090
 source "$TEST_SCRIPT"
 
 echo "Test completed: $TEST_NAME"

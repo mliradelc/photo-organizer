@@ -21,7 +21,7 @@ fi
 
 # Create temporary directory for images
 TMP_DIR="$(mktemp -d)"
-trap "rm -rf $TMP_DIR" EXIT
+trap 'rm -rf "$TMP_DIR"' EXIT
 
 # Change to the temporary directory
 cd "$TMP_DIR"
