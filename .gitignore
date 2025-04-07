@@ -1,0 +1,29 @@
+# Operating System Files
+.DS_Store
+Thumbs.db
+.Spotlight-V100
+.Trashes
+*.swp
+*.tmp
+
+# Test data
+organized_photos/
+sample_photos/
+
+# Temporary files
+*.tmp
+*.log
+*~
+.*.swp
+.*.swo
+
+# Testing artifacts
+test_scripts/test_cases/*/output/
+test_scripts/test_cases/*/expected/
+test_scripts/test_cases/*/actual/
+
+# IDE/Editor files
+.idea/
+.vscode/
+*.sublime-*
+*.code-workspace
