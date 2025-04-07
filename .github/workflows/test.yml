@@ -56,5 +56,8 @@ jobs:
     - name: Run all tests
       run: |
         cd test_scripts
+        # Make all test scripts executable
         chmod +x run_all_tests.sh
+        chmod +x test_single.sh
+        chmod +x test_cases/*/*.sh
         ./run_all_tests.sh

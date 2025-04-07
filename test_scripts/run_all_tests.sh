@@ -39,7 +39,7 @@ FAILED_TESTS=()
 for test in "${TEST_CASES[@]}"; do
   log "Running test: $test"
   
-  if ./test_single.sh "$test"; then
+  if bash "$SCRIPT_DIR/test_single.sh" "$test"; then
     log "✅ Test passed: $test"
     ((PASSED++))
   else
