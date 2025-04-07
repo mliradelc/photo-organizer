@@ -33,9 +33,6 @@ if [[ ! -d "$OUTPUT_DIR" ]]; then
 fi
 
 # Verify that images with no EXIF data were organized by file timestamp
-# Get the current year and date info (these files will be created with current timestamp)
-CURRENT_YEAR=$(date +"%Y")
-CURRENT_MONTH=$(printf "%02d" "$(date +"%m")")
 
 # Check for files with no EXIF data (they should go into the current year/month)
 # Since we're testing organization of files without EXIF data, we should use a more
