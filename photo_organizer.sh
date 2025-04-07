@@ -318,16 +318,47 @@ process_file() {
       log "INFO" "Would move: $file -> $dest_path"
     fi
   else
+    # Get file's original timestamps before copying/moving
+    local file_mtime
+    file_mtime=$(stat -c %Y "$file" 2>/dev/null || stat -f %m "$file" 2>/dev/null)
+    
+    # Determine the timestamp to use for the destination file
+    local target_time="$file_mtime"
+    
+    # Try to get EXIF creation date timestamp
+    local exif_timestamp=""
+    for date_tag in "DateTimeOriginal" "CreateDate" "DateCreated" "MediaCreateDate" "DateTime"; do
+      exif_timestamp=$(exiftool -s3 -"$date_tag" -d %s "$file" 2>/dev/null)
+      if [[ -n "$exif_timestamp" ]]; then
+        # Use the EXIF timestamp if it's older than the file modification time
+        if [[ "$exif_timestamp" -lt "$file_mtime" ]]; then
+          target_time="$exif_timestamp"
+          log "DEBUG" "Using EXIF date ($exif_timestamp) for file timestamp"
+        fi
+        break
+      fi
+    done
+    
     if [[ "$COPY_MODE" = true ]]; then
       if cp "$file" "$dest_path"; then
-        log "DEBUG" "Copied: $file -> $dest_path"
+        # Preserve original timestamp on the copied file
+        if ! touch -m -d "@$target_time" "$dest_path" 2>/dev/null; then
+          # Try alternative touch syntax if the first one fails
+          touch -m -t "$(date -d "@$target_time" "+%Y%m%d%H%M.%S" 2>/dev/null || date -r "$target_time" "+%Y%m%d%H%M.%S")" "$dest_path" 2>/dev/null
+        fi
+        log "DEBUG" "Copied: $file -> $dest_path (preserved timestamp)"
       else
         log "ERROR" "Failed to copy: $file -> $dest_path"
         return 1
       fi
     else
       if mv "$file" "$dest_path"; then
-        log "DEBUG" "Moved: $file -> $dest_path"
+        # For move operations, we may still need to adjust timestamp on some filesystems
+        if ! touch -m -d "@$target_time" "$dest_path" 2>/dev/null; then
+          # Try alternative touch syntax if the first one fails
+          touch -m -t "$(date -d "@$target_time" "+%Y%m%d%H%M.%S" 2>/dev/null || date -r "$target_time" "+%Y%m%d%H%M.%S")" "$dest_path" 2>/dev/null
+        fi
+        log "DEBUG" "Moved: $file -> $dest_path (preserved timestamp)"
       else
         log "ERROR" "Failed to move: $file -> $dest_path"
         return 1
