@@ -177,6 +177,111 @@ create_directory() {
   return 0
 }
 
+# Function to update missing EXIF date metadata 
+update_exif_date() {
+  local file="$1"
+  local dest_file="$2"
+  
+  # Check if DateTimeOriginal exists
+  local has_date_time_original
+  has_date_time_original=$(exiftool -s3 -DateTimeOriginal "$file" 2>/dev/null)
+  
+  # If DateTimeOriginal is missing, try to add it
+  if [[ -z "$has_date_time_original" ]]; then
+    log "DEBUG" "DateTimeOriginal missing in $file, attempting to add it"
+    
+    local determined_date=""
+    local date_source=""
+    
+    # Try other EXIF date fields in priority order
+    for date_tag in "CreateDate" "DateCreated" "MediaCreateDate" "DateTime"; do
+      determined_date=$(exiftool -s3 -"$date_tag" "$file" 2>/dev/null)
+      if [[ -n "$determined_date" ]]; then
+        date_source="$date_tag"
+        break
+      fi
+    done
+    
+    # Get file timestamps as potential fallbacks
+    local file_mtime
+    file_mtime=$(date -r "$file" "+%Y:%m:%d %H:%M:%S" 2>/dev/null)
+    
+    # Try to get creation date (birth time) - different syntax for different OSes
+    local file_ctime=""
+    
+    # Linux with stat supporting birth time
+    if stat --help 2>&1 | grep -q "birth"; then
+      file_ctime=$(stat -c %w "$file" 2>/dev/null | xargs -I{} date -d {} "+%Y:%m:%d %H:%M:%S" 2>/dev/null)
+    fi
+    
+    # macOS and BSD
+    if [[ -z "$file_ctime" ]]; then
+      file_ctime=$(stat -f %B "$file" 2>/dev/null | xargs -I{} date -r {} "+%Y:%m:%d %H:%M:%S" 2>/dev/null)
+    fi
+    
+    # If we didn't get a creation time, fall back to modification time
+    if [[ -z "$file_ctime" ]]; then
+      file_ctime="$file_mtime"
+    fi
+    
+    # Choose the oldest date between EXIF date, file mod time, and file creation time
+    if [[ -n "$determined_date" ]]; then
+      # Convert all dates to seconds since epoch for comparison
+      local exif_seconds
+      local mtime_seconds
+      local ctime_seconds
+      
+      # Convert EXIF date to seconds
+      exif_seconds=$(date -d "$determined_date" +%s 2>/dev/null || date -j -f "%Y:%m:%d %H:%M:%S" "$determined_date" +%s 2>/dev/null)
+      
+      # Convert file mod time to seconds
+      mtime_seconds=$(date -d "$file_mtime" +%s 2>/dev/null || date -j -f "%Y:%m:%d %H:%M:%S" "$file_mtime" +%s 2>/dev/null)
+      
+      # Convert file creation time to seconds
+      ctime_seconds=$(date -d "$file_ctime" +%s 2>/dev/null || date -j -f "%Y:%m:%d %H:%M:%S" "$file_ctime" +%s 2>/dev/null)
+      
+      # Find the oldest date
+      if [[ -n "$mtime_seconds" && -n "$exif_seconds" && "$mtime_seconds" -lt "$exif_seconds" ]]; then
+        determined_date="$file_mtime"
+        date_source="file_mtime"
+      fi
+      
+      if [[ -n "$ctime_seconds" && -n "$date_source" && "$ctime_seconds" -lt "$mtime_seconds" && "$ctime_seconds" -lt "$exif_seconds" ]]; then
+        determined_date="$file_ctime"
+        date_source="file_ctime"
+      fi
+    else
+      # No EXIF date found, use file timestamp (older of mtime/ctime)
+      local mtime_seconds
+      local ctime_seconds
+      
+      # Convert timestamps to seconds for comparison
+      mtime_seconds=$(date -d "$file_mtime" +%s 2>/dev/null || date -j -f "%Y:%m:%d %H:%M:%S" "$file_mtime" +%s 2>/dev/null)
+      ctime_seconds=$(date -d "$file_ctime" +%s 2>/dev/null || date -j -f "%Y:%m:%d %H:%M:%S" "$file_ctime" +%s 2>/dev/null)
+      
+      if [[ -n "$ctime_seconds" && -n "$mtime_seconds" && "$ctime_seconds" -lt "$mtime_seconds" ]]; then
+        determined_date="$file_ctime"
+        date_source="file_ctime"
+      else
+        determined_date="$file_mtime"
+        date_source="file_mtime"
+      fi
+    fi
+    
+    # Add DateTimeOriginal to the destination file
+    if [[ -n "$determined_date" ]]; then
+      log "DEBUG" "Adding DateTimeOriginal=$determined_date to $dest_file (source: $date_source)"
+      if ! exiftool -overwrite_original "-DateTimeOriginal=$determined_date" "$dest_file" >/dev/null 2>&1; then
+        log "WARNING" "Failed to add DateTimeOriginal to $dest_file"
+      fi
+    else
+      log "WARNING" "Could not determine a date for $file"
+    fi
+  else
+    log "DEBUG" "DateTimeOriginal already exists in $file"
+  fi
+}
+
 # Function to extract date from EXIF data
 extract_date() {
   local file="$1"
@@ -194,31 +299,76 @@ extract_date() {
   local file_mod_date
   file_mod_date=$(date -r "$file" +"%Y:%m:%d")
   
+  # Try to get creation date (birth time) - different syntax for different OSes
+  local file_creation_date=""
+  
+  # Linux with stat supporting birth time
+  if stat --help 2>&1 | grep -q "birth"; then
+    file_creation_date=$(stat -c %w "$file" 2>/dev/null | xargs -I{} date -d {} "+%Y:%m:%d" 2>/dev/null)
+  fi
+  
+  # macOS and BSD
+  if [[ -z "$file_creation_date" ]]; then
+    file_creation_date=$(stat -f %B "$file" 2>/dev/null | xargs -I{} date -r {} "+%Y:%m:%d" 2>/dev/null)
+  fi
+  
+  # If we couldn't get creation date, use modification date
+  if [[ -z "$file_creation_date" ]]; then
+    file_creation_date="$file_mod_date"
+  fi
+  
+  # Find the oldest date between EXIF, modification, and creation dates
   if [[ -n "$exif_date" ]]; then
     # Extract just the date part from exif_date (YYYY:MM:DD)
     local exif_date_only
     exif_date_only=$(echo "$exif_date" | awk '{print $1}')
     
-    # Compare dates - if file_mod_date is older than exif_date, use file_mod_date
     # Convert dates to numbers (YYYYMMDD) for comparison
-    local exif_num file_mod_num
-    exif_num=$(echo "$exif_date_only" | tr -d ':')
+    local exif_date_num file_mod_num file_creation_num
+    exif_date_num=$(echo "$exif_date_only" | tr -d ':')
     file_mod_num=$(echo "$file_mod_date" | tr -d ':')
+    file_creation_num=$(echo "$file_creation_date" | tr -d ':')
     
-    if [[ "$file_mod_num" -lt "$exif_num" ]]; then
-      log "DEBUG" "File mod date ($file_mod_date) is older than EXIF date ($exif_date_only), using file mod date"
-      # Extract year and month (YYYY/MM)
-      echo "$file_mod_date" | cut -d':' -f1-2 | tr ':' '/'
-    else
-      # Use EXIF date (it's newer or the same)
-      # Extract year and month (YYYY/MM)
-      echo "$exif_date_only" | cut -d':' -f1-2 | tr ':' '/'
+    # Start with EXIF date
+    local date_to_use="$exif_date_only"
+    local date_source="EXIF"
+    
+    # If mod date is older than current date_to_use, use mod date
+    if [[ -n "$file_mod_num" && "$file_mod_num" -lt "$exif_date_num" ]]; then
+      date_to_use="$file_mod_date"
+      date_source="file modification date"
     fi
-  else
-    # No EXIF date found, use file modification date
-    log "DEBUG" "No EXIF date found for $file, using file modification date"
+    
+    # If creation date is older than current date_to_use, use creation date
+    if [[ -n "$file_creation_num" && "$file_creation_num" -lt "$(echo "$date_to_use" | tr -d ':')" ]]; then
+      date_to_use="$file_creation_date"
+      date_source="file creation date"
+    fi
+    
+    log "DEBUG" "Using $date_source for $file"
     # Extract year and month (YYYY/MM)
-    echo "$file_mod_date" | cut -d':' -f1-2 | tr ':' '/'
+    echo "$date_to_use" | cut -d':' -f1-2 | tr ':' '/'
+  else
+    # No EXIF date found, use older of file modification or creation date
+    local date_to_use
+    local date_source
+    
+    # Convert dates to numbers (YYYYMMDD) for comparison
+    local file_mod_num file_creation_num
+    file_mod_num=$(echo "$file_mod_date" | tr -d ':')
+    file_creation_num=$(echo "$file_creation_date" | tr -d ':')
+    
+    if [[ -n "$file_creation_num" && "$file_creation_num" -lt "$file_mod_num" ]]; then
+      date_to_use="$file_creation_date"
+      date_source="file creation date"
+    else
+      date_to_use="$file_mod_date"
+      date_source="file modification date"
+    fi
+    
+    log "DEBUG" "No EXIF date found for $file, using $date_source"
+    # Extract year and month (YYYY/MM)
+    echo "$date_to_use" | cut -d':' -f1-2 | tr ':' '/'
   fi
 }
 
@@ -376,6 +526,10 @@ process_file() {
           # Try alternative touch syntax if the first one fails
           touch -m -t "$(date -d "@$target_time" "+%Y%m%d%H%M.%S" 2>/dev/null || date -r "$target_time" "+%Y%m%d%H%M.%S")" "$dest_path" 2>/dev/null
         fi
+        
+        # Update EXIF DateTimeOriginal if it's missing
+        update_exif_date "$file" "$dest_path"
+        
         log "DEBUG" "Copied: $file -> $dest_path (preserved timestamp)"
       else
         log "ERROR" "Failed to copy: $file -> $dest_path"
@@ -388,6 +542,10 @@ process_file() {
           # Try alternative touch syntax if the first one fails
           touch -m -t "$(date -d "@$target_time" "+%Y%m%d%H%M.%S" 2>/dev/null || date -r "$target_time" "+%Y%m%d%H%M.%S")" "$dest_path" 2>/dev/null
         fi
+        
+        # Update EXIF DateTimeOriginal if it's missing
+        update_exif_date "$file" "$dest_path"
+        
         log "DEBUG" "Moved: $file -> $dest_path (preserved timestamp)"
       else
         log "ERROR" "Failed to move: $file -> $dest_path"
