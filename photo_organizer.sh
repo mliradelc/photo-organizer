@@ -20,7 +20,9 @@ readonly TERM_RESET="${ESC}[0m"
 # Function to draw a progress bar using simple ASCII characters
 draw_progress_bar() {
   local percent=$1
-  local width=${2:-50}
+  local processed=$2
+  local total=$3
+  local width=${4:-40}  # Reduced width to make room for file counts
   local completed=$(( width * percent / 100 ))
   local remaining=$(( width - completed ))
   
@@ -28,13 +30,13 @@ draw_progress_bar() {
   local percent_display
   percent_display="$(printf "%3d" "$percent")%"
   
-  # Draw progress bar with simple ASCII instead of Unicode
+  # Draw progress bar with simple ASCII
   printf "%s" "${TERM_CLEAR_LINE}${TERM_BLUE}[${TERM_GREEN}"
   printf "%${completed}s" | tr ' ' '#'
   printf "%s" "${TERM_BLUE}"
   printf "%${remaining}s" | tr ' ' '-'
   printf "%s" "] ${TERM_YELLOW}"
-  printf " %s%s" "$percent_display" "${TERM_RESET}"
+  printf " %s ${TERM_RESET}(%d/%d files)" "$percent_display" "$processed" "$total"
 }
 
 # Detect number of CPU cores for parallel processing
@@ -475,7 +477,7 @@ process_files_parallel() {
           if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
             local percent=$((100 * (processed + errors) / total_files))
             if [[ $percent -ne $last_percent ]]; then
-              draw_progress_bar "$percent"
+              draw_progress_bar "$percent" "$((processed + errors))" "$total_files"
               last_percent=$percent
             fi
           fi
@@ -503,7 +505,7 @@ process_files_parallel() {
   
   # Complete the progress bar and add a newline
   if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
-    draw_progress_bar 100
+    draw_progress_bar 100 "$total_files" "$total_files"
     echo
   fi
   
@@ -577,7 +579,7 @@ process_directory() {
       if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
         local percent=$((100 * (count + errors) / total_files))
         if [[ $percent -ne $last_percent ]]; then
-          draw_progress_bar "$percent"
+          draw_progress_bar "$percent" "$((count + errors))" "$total_files"
           last_percent=$percent
         fi
       fi
@@ -590,7 +592,7 @@ process_directory() {
     
     # Complete the progress bar and add a newline
     if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
-      draw_progress_bar 100
+      draw_progress_bar 100 "$total_files" "$total_files"
       echo
     fi
     
