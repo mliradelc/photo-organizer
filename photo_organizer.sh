@@ -9,6 +9,33 @@ set -e
 readonly SCRIPT_NAME="Photo Organizer"
 readonly SCRIPT_VERSION="1.0.0"
 
+# Terminal colors and cursor movement
+readonly TERM_CLEAR_LINE="\r\033[K"
+readonly TERM_GREEN="\033[32m"
+readonly TERM_BLUE="\033[34m"
+readonly TERM_YELLOW="\033[33m"
+readonly TERM_RESET="\033[0m"
+
+# Function to draw a progress bar
+draw_progress_bar() {
+  local percent=$1
+  local width=${2:-50}
+  local completed=$(( width * percent / 100 ))
+  local remaining=$(( width - completed ))
+  
+  # Calculate percent display with padding
+  local percent_display
+  percent_display="$(printf "%3d" "$percent")%"
+  
+  # Draw progress bar
+  printf "%s" "${TERM_CLEAR_LINE}${TERM_BLUE}[${TERM_GREEN}"
+  printf "%${completed}s" | tr ' ' '█'
+  printf "%s" "${TERM_BLUE}"
+  printf "%${remaining}s" | tr ' ' '░'
+  printf "%s" "] ${TERM_YELLOW}"
+  printf " %s%s" "$percent_display" "${TERM_RESET}"
+}
+
 # Detect number of CPU cores for parallel processing
 detect_cpu_cores() {
   local cores
@@ -379,6 +406,13 @@ process_files_parallel() {
   local total_files=${#files[@]}
   local processed=0
   local errors=0
+  local last_percent=-1
+  local silent
+  if [[ -t 1 ]]; then
+    silent=""
+  else
+    silent="true"
+  fi
   
   # Create temporary directory for job status files
   local tmp_dir
@@ -436,9 +470,18 @@ process_files_parallel() {
           unset "results[$i]"
           ((active_jobs--))
           
-          # Print progress every 10 files
-          if [[ $((processed + errors)) -gt 0 && $(((processed + errors) % 10)) -eq 0 ]]; then
-            log "INFO" "Progress: $(((processed + errors) * 100 / total_files))% ($((processed + errors))/$total_files files processed)"
+          # Update progress bar
+          if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
+            local percent=$((100 * (processed + errors) / total_files))
+            if [[ $percent -ne $last_percent ]]; then
+              draw_progress_bar "$percent"
+              last_percent=$percent
+            fi
+          fi
+          
+          # Print detailed progress every 10 files if verbose
+          if [[ $VERBOSE = true && $((processed + errors)) -gt 0 && $(((processed + errors) % 10)) -eq 0 ]]; then
+            log "INFO" "Progress: $((100 * (processed + errors) / total_files))% ($((processed + errors))/$total_files files processed)"
           fi
           
           break  # Only process one completed job at a time
@@ -456,6 +499,12 @@ process_files_parallel() {
   
   # Clean up
   rm -rf "$tmp_dir"
+  
+  # Complete the progress bar and add a newline
+  if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
+    draw_progress_bar 100
+    echo
+  fi
   
   log "INFO" "Parallel processing completed: $processed successful, $errors failed"
   return 0
@@ -508,6 +557,14 @@ process_directory() {
   else
     # Process files sequentially
     log "INFO" "Using sequential processing"
+    local last_percent=-1
+    local silent
+    if [[ -t 1 ]]; then
+      silent=""
+    else
+      silent="true"
+    fi
+    
     for file in "${files[@]}"; do
       if process_file "$file"; then
         ((count++))
@@ -515,11 +572,26 @@ process_directory() {
         ((errors++))
       fi
       
-      # Print progress every 10 files
-      if [[ $((count + errors)) -gt 0 && $(((count + errors) % 10)) -eq 0 ]]; then
+      # Update progress bar
+      if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
+        local percent=$((100 * (count + errors) / total_files))
+        if [[ $percent -ne $last_percent ]]; then
+          draw_progress_bar "$percent"
+          last_percent=$percent
+        fi
+      fi
+      
+      # Print detailed progress every 10 files if verbose
+      if [[ $VERBOSE = true && $((count + errors)) -gt 0 && $(((count + errors) % 10)) -eq 0 ]]; then
         log "INFO" "Progress: $(((count + errors) * 100 / total_files))% ($((count + errors))/$total_files files processed)"
       fi
     done
+    
+    # Complete the progress bar and add a newline
+    if [[ $total_files -gt 0 && "$silent" != "true" ]]; then
+      draw_progress_bar 100
+      echo
+    fi
     
     log "INFO" "Processed $count files from $dir ($errors errors)"
   fi
