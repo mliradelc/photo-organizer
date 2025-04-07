@@ -4,8 +4,13 @@
 
 # Find the repository root to locate the photo_organizer.sh script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 ORGANIZER_SCRIPT="$REPO_ROOT/photo_organizer.sh"
+
+# Debug paths
+echo "Debug: SCRIPT_DIR=$SCRIPT_DIR"
+echo "Debug: REPO_ROOT=$REPO_ROOT"
+echo "Debug: ORGANIZER_SCRIPT=$ORGANIZER_SCRIPT"
 
 # Run the photo organizer script with date organization
 "$ORGANIZER_SCRIPT" -o "output" -b "date" -v "input"
