@@ -38,15 +38,19 @@ for test in "${TEST_SCRIPTS[@]}"; do
   # Create a temporary file to capture output
   TEST_OUTPUT_FILE="$(mktemp)"
   
-  # Run the test directly (the test scripts now handle finding their own input)
-  if bash "$SCRIPT_DIR/individual_tests/$test.sh" > "$TEST_OUTPUT_FILE" 2>&1; then
+  # Run the test directly with more verbosity
+  log "Executing: $SCRIPT_DIR/individual_tests/$test.sh"
+  
+  # Use 'set -x' to show commands as they execute and capture all output
+  if bash -x "$SCRIPT_DIR/individual_tests/$test.sh" > "$TEST_OUTPUT_FILE" 2>&1; then
     log "✅ Test passed: $test"
     ((PASSED++))
   else
     TEST_EXIT_CODE=$?
     log "❌ Test failed: $test (exit code: $TEST_EXIT_CODE)"
-    log "Test output:"
+    log "=== Full test output: ==="
     cat "$TEST_OUTPUT_FILE"
+    log "=== End of test output ==="
     ((FAILED++))
     FAILED_TESTS+=("$test")
   fi
